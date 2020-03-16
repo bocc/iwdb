@@ -1,3 +1,5 @@
+mod init;
+
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Server, StatusCode};
 use std::convert::Infallible;
@@ -26,23 +28,29 @@ async fn shutdown_signal() {
 
 #[tokio::main]
 async fn main() {
-    // fill a hashset with some values
+    let addr = "https://random-word-api.herokuapp.com/word?number=10";
+
+    // fill a hashset with some values (before wrapping it in Arc)
     let mut words = std::collections::HashSet::new();
 
-    let word_list = vec!["egy", "ketto", "harom"];
+    let res = init::from_file::add_words(&mut words, "./assets/init_words.txt");
 
-    for w in word_list {
-        words.insert(w);
+    match res {
+        Ok(n) => println!("Inserted {} words from {}", n, "./assets/init_words.txt"),
+        Err(e) => eprintln!("Faild to insert words from file because {}", e),
     }
 
-    words.iter().for_each(|w| println!("{}", w));
+    let res = init::from_web_api::add_words(&mut words, addr).await;
+
+    match res {
+        Ok(n) => println!("Inserted {} words from {}", n, addr),
+        Err(e) => eprintln!("Faild to insert words from web API because {}", e),
+    }
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
     // And a MakeService to handle each connection...
-    let make_service = make_service_fn(|_conn| async {
-        Ok::<_, Infallible>(service_fn(handle))
-    });
+    let make_service = make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(handle)) });
 
     // Then bind and serve...
     let server = Server::bind(&addr)
