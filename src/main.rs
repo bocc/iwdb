@@ -1,22 +1,10 @@
 mod init;
 
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Method, Request, Response, Server, StatusCode};
+use hyper::{Body, Method, Response, Server, StatusCode};
 use std::convert::Infallible;
 use std::net::SocketAddr;
-
-// request handler
-// we accept GET to "/query" and PUT to "/add"
-async fn handle(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    match (req.method(), req.uri().path()) {
-        (&Method::GET, "/query") => Ok(Response::new(Body::from("query"))),
-        (&Method::PUT, "/add") => Ok(Response::new(Body::from("add"))),
-        _ => Ok(Response::builder()
-            .status(StatusCode::METHOD_NOT_ALLOWED)
-            .body(Body::empty())
-            .expect("Could not create response.")),
-    }
-}
+use std::sync::{Arc, RwLock};
 
 // what to do when CTRL-C is pressed
 async fn shutdown_signal() {
@@ -47,12 +35,35 @@ async fn main() {
         Err(e) => eprintln!("Faild to insert words from web API because {}", e),
     }
 
+    let words = Arc::new(RwLock::new(words));
+
+    let make_service = make_service_fn(move |_conn| {
+        let _words = words.clone();
+
+        async move {
+            // This is the `Service` that will handle the connection.
+            // `service_fn` is a helper to convert a function that
+            // returns a Response into a `Service`.
+            Ok::<_, Infallible>(service_fn(move |req| {
+                let resp = match (req.method(), req.uri().path()) {
+                    (&Method::GET, "/query") => 
+                        Ok::<_,Infallible>(Response::new(Body::from("query"))),
+                    (&Method::PUT, "/add") => {
+                        Ok(Response::new(Body::from("add"))) 
+                    },
+                    _ => Ok(Response::builder()
+                        .status(StatusCode::METHOD_NOT_ALLOWED)
+                        .body(Body::empty())
+                        .expect("Could not create response.")),
+                };
+            
+                async move { resp }
+            }))
+        }
+    });
+
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
-    // And a MakeService to handle each connection...
-    let make_service = make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(handle)) });
-
-    // Then bind and serve...
     let server = Server::bind(&addr)
         .serve(make_service)
         .with_graceful_shutdown(shutdown_signal());
