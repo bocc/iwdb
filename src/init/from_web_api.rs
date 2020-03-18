@@ -5,14 +5,14 @@ use std::collections::HashSet;
 
 pub(crate) async fn add_words(
     words: &mut HashSet<String>,
-    addr: &str,
+    uri: &Uri,
 ) -> Result<usize, Box<dyn std::error::Error>> {
-    let uri: Uri = addr.parse()?;
+    // let uri: Uri = addr.parse()?;
 
     let https = HttpsConnector::new();
     let client = Client::builder().build::<_, hyper::Body>(https);
 
-    let res = client.get(uri).await?;
+    let res = client.get(uri.clone()).await?;
 
     let body = hyper::body::aggregate(res).await?;
 

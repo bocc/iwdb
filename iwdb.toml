@@ -1,0 +1,7 @@
+[init]
+path =  "./assets/init_words.txt"
+web_api = "https://random-word-api.herokuapp.com/word?number=5"
+
+[server]
+ip = "127.0.0.1"
+port = 3000

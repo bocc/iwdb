@@ -1,4 +1,10 @@
+// init words set from local file and/or web api
 mod init;
+// types for json hadling
+mod api;
+// types required to parse iwdb.toml
+mod configuration;
+mod server;
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Response, Server, StatusCode};
@@ -6,32 +12,24 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
 
-// what to do when CTRL-C is pressed
-async fn shutdown_signal() {
-    tokio::signal::ctrl_c()
-        .await
-        .expect("Could not set CTRL+C signal handler.");
-    println!("iwdb shutting down.");
-}
-
 #[tokio::main]
 async fn main() {
-    let addr = "https://random-word-api.herokuapp.com/word?number=10";
+    let config = configuration::parse_configuration("./iwdb.toml");
 
     // fill a hashset with some values (before wrapping it in Arc)
     let mut words = std::collections::HashSet::new();
 
-    let res = init::from_file::add_words(&mut words, "./assets/init_words.txt");
+    let res = init::from_file::add_words(&mut words, &config.init.path);
 
     match res {
-        Ok(n) => println!("Inserted {} words from {}", n, "./assets/init_words.txt"),
+        Ok(n) => println!("Inserted {} words from {}", n, &config.init.path),
         Err(e) => eprintln!("Faild to insert words from file because {}", e),
     }
 
-    let res = init::from_web_api::add_words(&mut words, addr).await;
+    let res = init::from_web_api::add_words(&mut words, &config.init.web_api).await;
 
     match res {
-        Ok(n) => println!("Inserted {} words from {}", n, addr),
+        Ok(n) => println!("Inserted {} words from {}", n, &config.init.web_api),
         Err(e) => eprintln!("Faild to insert words from web API because {}", e),
     }
 
@@ -46,27 +44,26 @@ async fn main() {
             // returns a Response into a `Service`.
             Ok::<_, Infallible>(service_fn(move |req| {
                 let resp = match (req.method(), req.uri().path()) {
-                    (&Method::GET, "/query") => 
-                        Ok::<_,Infallible>(Response::new(Body::from("query"))),
-                    (&Method::PUT, "/add") => {
-                        Ok(Response::new(Body::from("add"))) 
-                    },
+                    (&Method::GET, "/query") => {
+                        Ok::<_, Infallible>(Response::new(Body::from("query")))
+                    }
+                    (&Method::PUT, "/add") => Ok(Response::new(Body::from("add"))),
                     _ => Ok(Response::builder()
                         .status(StatusCode::METHOD_NOT_ALLOWED)
                         .body(Body::empty())
                         .expect("Could not create response.")),
                 };
-            
+
                 async move { resp }
             }))
         }
     });
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::new(config.server.ip, config.server.port);
 
     let server = Server::bind(&addr)
         .serve(make_service)
-        .with_graceful_shutdown(shutdown_signal());
+        .with_graceful_shutdown(server::shutdown_signal());
 
     println!("Listening on {}", &addr);
 
