@@ -19,19 +19,7 @@ async fn main() {
     // fill a hashset with some values (before wrapping it in Arc)
     let mut words = std::collections::HashSet::new();
 
-    let res = init::from_file::add_words(&mut words, &config.init.path);
-
-    match res {
-        Ok(n) => println!("Inserted {} words from {}", n, &config.init.path),
-        Err(e) => eprintln!("Faild to insert words from file because {}", e),
-    }
-
-    let res = init::from_web_api::add_words(&mut words, &config.init.web_api).await;
-
-    match res {
-        Ok(n) => println!("Inserted {} words from {}", n, &config.init.web_api),
-        Err(e) => eprintln!("Faild to insert words from web API because {}", e),
-    }
+    init::insert_words(&mut words, &config).await;
 
     let words = Arc::new(RwLock::new(words));
 

@@ -3,12 +3,10 @@ use hyper::{Client, Uri};
 use hyper_tls::HttpsConnector;
 use std::collections::HashSet;
 
-pub(crate) async fn add_words(
+pub(super) async fn add_words(
     words: &mut HashSet<String>,
     uri: &Uri,
 ) -> Result<usize, Box<dyn std::error::Error>> {
-    // let uri: Uri = addr.parse()?;
-
     let https = HttpsConnector::new();
     let client = Client::builder().build::<_, hyper::Body>(https);
 
@@ -16,7 +14,8 @@ pub(crate) async fn add_words(
 
     let body = hyper::body::aggregate(res).await?;
 
-    // TODO perhaps check res.status() before parsing?
+    // TODO perhaps check res.status() before parsing? find a way to skip
+    // individual allocations
     let web_words: Vec<String> = serde_json::from_reader(body.reader())?;
 
     let inserted = web_words.len();

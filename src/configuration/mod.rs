@@ -16,6 +16,7 @@ pub struct Server {
 
 #[derive(Deserialize, Debug)]
 pub struct Init {
+    // if you have non-utf8 paths, seek professional help
     pub path: String,
     #[serde(with = "http_serde::uri")]
     pub web_api: Uri,
@@ -25,7 +26,7 @@ pub(crate) fn parse_configuration<P>(path: P) -> Config
 where
     P: AsRef<std::path::Path>,
 {
-    // if anything fails, defaults are created. it could be more granular though
+    // if anything fails, defaults are used. it could be more granular though
     let defaults = Config {
         server: Server {
             ip: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),

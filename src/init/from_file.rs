@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
-pub(crate) fn add_words<P>(words: &mut HashSet<String>, path: P) -> std::io::Result<usize>
+pub(super) fn add_words<P>(words: &mut HashSet<String>, path: P) -> std::io::Result<usize>
 where
     P: AsRef<Path>,
 {

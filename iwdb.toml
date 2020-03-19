@@ -1,5 +1,7 @@
 [init]
 path =  "./assets/init_words.txt"
+
+# if you want a lot of words, you can try a different number, or /all
 web_api = "https://random-word-api.herokuapp.com/word?number=5"
 
 [server]
