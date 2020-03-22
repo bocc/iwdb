@@ -49,38 +49,44 @@ pub struct ReqQuery {
 
 // own everything (perhaps a better name would be `edward`)
 pub async fn add_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>) -> Response<Body> {
-    let body = hyper::body::to_bytes(req.into_body()).await;
+    // mapping errors to &str is not elegant
+    let response = hyper::body::to_bytes(req.into_body())
+        .await
+        .map_err(|_| "couldn't read request body")
+        .and_then(|body| {
+            serde_json::from_slice::<ReqInsert>(&body).map_err(|_| "couldn't parse request")
+        })
+        .map(|req| {
+            let word = req.add.trim();
 
-    let body = match body {
-        Ok(body) => {
-            let request: Result<ReqInsert, _> = serde_json::from_slice(&body);
+            if word_is_valid(word) {
+                // TODO only read lock for containment check?
+                let mut words = words.write().expect("lock was poisoned");
 
-            if let Ok(request) = request {
-                let mut words = words.write().unwrap();
-
-                if words.contains(&request.add) {
-                    Body::from(
-                        serde_json::to_string(&RespInsertStatus::AlreadyExisted)
-                            .expect("response serialization failed"),
-                    )
+                if words.contains(word) {
+                    RespInsertStatus::AlreadyExisted
                 } else {
-                    words.insert(request.add);
-                    Body::from(
-                        serde_json::to_string(&RespInsertStatus::Inserted)
-                            .expect("response serialization failed"),
-                    )
+                    words.insert(word.to_string());
+                    RespInsertStatus::Inserted
                 }
             } else {
-                Body::from(
-                    serde_json::to_string(&RespInsertStatus::Inserted)
-                        .expect("response serialization failed"),
-                )
+                RespInsertStatus::Invalid
             }
-        }
-        Err(_) => Body::from("wrong body"),
-    };
+        })
+        .map(|insert_status| {
+            Response::new(Body::from(
+                serde_json::to_string(&insert_status).expect("response serialization failed"),
+            ))
+        })
+        .unwrap_or_else(|err| {
+            // let's just blame the user
+            Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .body(Body::from(err))
+                .expect("Could not create response.")
+        });
 
-    Response::new(body)
+    response
 }
 
 pub async fn query_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>) -> Response<Body> {
@@ -115,8 +121,8 @@ pub async fn default_response() -> Response<Body> {
         .expect("Could not create response.")
 }
 
-// TODO return more detailed resons enum
-fn validate_word(s: &str) -> bool {
+// TODO return more detailed reasons enum?
+fn word_is_valid(s: &str) -> bool {
     // cannot be empty and cannot contain whitespace (here it is assumed to be trimmed)
     !(s.is_empty() || s.chars().any(|c| c.is_whitespace()))
 }

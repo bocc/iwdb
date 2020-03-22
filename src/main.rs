@@ -1,4 +1,3 @@
-#![feature(type_name_of_val)]
 // init words set from local file and/or web api
 mod init;
 // types for json hadling in requests and responses
@@ -15,7 +14,7 @@ use std::sync::{Arc, RwLock};
 
 #[tokio::main]
 async fn main() {
-    let config = configuration::parse_configuration("./iwdb.toml");
+    let config = configuration::parse_or_default("./iwdb.toml");
 
     // create a set and fill a hashset with some values (before wrapping it in Arc)
     let mut words = std::collections::HashSet::new();

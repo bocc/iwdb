@@ -22,7 +22,7 @@ pub struct Init {
     pub web_api: Uri,
 }
 
-pub(crate) fn parse_configuration<P>(path: P) -> Config
+pub(crate) fn parse_or_default<P>(path: P) -> Config
 where
     P: AsRef<std::path::Path>,
 {
