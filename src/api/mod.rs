@@ -98,7 +98,7 @@ pub async fn query_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>)
             serde_json::from_slice::<ReqQuery>(&body).map_err(|_| "couldn't parse request")
         })
         .map(|req| {
-            let word = req.add.trim();
+            let word = req.word.trim();
 
             if word_is_valid(word) {
                 let words = words.read().expect("lock was poisoned");

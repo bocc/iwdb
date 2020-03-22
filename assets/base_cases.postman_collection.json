@@ -1,0 +1,352 @@
+{
+	"info": {
+		"_postman_id": "ef82ebd3-df8d-4ac7-a60a-09079a938075",
+		"name": "base_cases",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "root",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "da57a904-e4cc-49b4-a476-0a82af184e84",
+						"exec": [
+							"pm.test(\"root doesn't do anything\", function () {",
+							"    pm.response.to.have.status(405);",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"word\": \"contained\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:3000/",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "3000",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "notfound",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "15a2e512-6e7c-42c9-bb45-9b4b44cbb066",
+						"exec": [
+							"pm.test(\"query nonexistent word\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.body(\"\\\"NotFound\\\"\");",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"word\": \"not_contained\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:3000/query",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "3000",
+					"path": [
+						"query"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "invalid",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "79fac95e-86d3-496c-879b-28e3b7d3594b",
+						"exec": [
+							"pm.test(\"query word w inner whitespace\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.body(\"\\\"Invalid\\\"\");",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"word\": \"inner\\twhitespace\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:3000/query",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "3000",
+					"path": [
+						"query"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "untrimmed",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "79fac95e-86d3-496c-879b-28e3b7d3594b",
+						"exec": [
+							"pm.test(\"query an untrimmed word\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.body(\"\\\"Found\\\"\");",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"word\": \" contained\\t\\n\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:3000/query",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "3000",
+					"path": [
+						"query"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "insert",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "3ebf8f4d-e6ed-45da-a271-a2ebd6764753",
+						"exec": [
+							"pm.test(\"insert a word\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.body(\"\\\"Inserted\\\"\");",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"add\": \"contained2\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:3000/add",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "3000",
+					"path": [
+						"add"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "insert _twice",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "3ebf8f4d-e6ed-45da-a271-a2ebd6764753",
+						"exec": [
+							"pm.test(\"insert a word\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.body(\"\\\"AlreadyExisted\\\"\");",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"add\": \"contained2\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:3000/add",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "3000",
+					"path": [
+						"add"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "query_recent_insert",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "3ebf8f4d-e6ed-45da-a271-a2ebd6764753",
+						"exec": [
+							"pm.test(\"insert a word\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.body(\"\\\"Found\\\"\");",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"word\": \"contained2\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:3000/query",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "3000",
+					"path": [
+						"query"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}

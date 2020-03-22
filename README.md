@@ -8,7 +8,7 @@ This service provides checks whether a word posted to it exists in a set of word
 
 # What is a word?
 
-A word is a valid utf-8 encoded string that is not empty, and doesn't contain internal white spaces (that would be a *sentence*) - we gracefully take care of starting and trailing white spaces for you, both at inserting & querying.
+A word is a valid utf-8 encoded string that is not empty, and doesn't contain internal white spaces (that would be a *sentence*) - we gracefully take care of starting and trailing white spaces for you, both at inserting & querying through the web API.
 
  
 
@@ -40,11 +40,15 @@ Please note that our word set can only grow over time - removal is not supported
 
 * ### Adding
 
-    * POST to /add with { "add": "your_word"}
+    * POST to /add with { "add": "your_word" }
+
+# Tests
+
+There are some rudimentary test cases in the `assets` folder, which can be imported to Postman. (They use the default configuration.)
 
 # Future developments
 
-There are of course still plenty of ways to do this better. Since being able to do iteration, draining, etc. on our word set is not a requirement, storing actual values is not necessary, only hashes are needed. This would have a two-fold benefit: smaller and known size, allowing for tricks like arena allocation.
+There are of course still plenty of ways to do this better. Since being able to do iteration, draining, etc. on our word set is not a requirement, storing actual values is not necessary, only hashes are needed. This would have a two-fold benefit: smaller and known size, allowing for tricks like arena allocation. Docstrings and more tests are always nice.
 
 # License
 
