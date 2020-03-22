@@ -1,9 +1,9 @@
 pub mod from_file;
 pub mod from_web_api;
 
-use std::collections::HashSet;
 use crate::configuration::Config;
 use crate::init;
+use std::collections::HashSet;
 
 pub async fn insert_words(words: &mut HashSet<String>, config: &Config) {
     let res = init::from_file::add_words(words, &config.init.path);
