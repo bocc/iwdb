@@ -24,7 +24,7 @@ We have an `iwdb.toml` where you can edit a few basic things, like which random 
 
  
 
-# Branches
+# Branches (TODO)
 
 You can experiment with multiple backing set types. The MVP branch uses Rust's `HashSet` from the standard library as a kind of reference implementation, the kuzdu branch uses a lock-free skipmap that doesn't support removal by it's design, and the evmap branch uses an eventually consistent hashmap, where the tradeoff is eventual consistency and doubled memory usage.
 
@@ -36,15 +36,15 @@ Please note that our word set can only grow over time - removal is not supported
 
 * ### Querying
 
-    * HEAD to /query
-
-    * POST to /query
+    * GET to /query with { "word": "your_word" }
 
 * ### Adding
 
-    * POST to /add
+    * POST to /add with { "add": "your_word"}
 
- 
+# Future developments
+
+There are of course still plenty of ways to do this better. Since being able to do iteration, draining, etc. on our word set is not a requirement, storing actual values is not necessary, only hashes are needed. This would have a two-fold benefit: smaller and known size, allowing for tricks like arena allocation.
 
 # License
 
