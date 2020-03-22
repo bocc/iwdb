@@ -89,29 +89,43 @@ pub async fn add_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>) -
     response
 }
 
+// TODO a lot of duplication here
 pub async fn query_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>) -> Response<Body> {
-    let body = hyper::body::to_bytes(req.into_body()).await;
+    let response = hyper::body::to_bytes(req.into_body())
+        .await
+        .map_err(|_| "couldn't read request body")
+        .and_then(|body| {
+            serde_json::from_slice::<ReqQuery>(&body).map_err(|_| "couldn't parse request")
+        })
+        .map(|req| {
+            let word = req.add.trim();
 
-    let body = match body {
-        Ok(body) => {
-            let query: Result<ReqQuery, _> = serde_json::from_slice(&body);
+            if word_is_valid(word) {
+                let words = words.read().expect("lock was poisoned");
 
-            if let Ok(query) = query {
-                let words = words.read().unwrap();
-
-                if words.contains(&query.word) {
-                    Body::from("contains")
+                if words.contains(word) {
+                    RespQueryStatus::Found
                 } else {
-                    Body::from("doesn't contain")
+                    RespQueryStatus::NotFound
                 }
             } else {
-                Body::from("wrong question")
+                RespQueryStatus::Invalid
             }
-        }
-        Err(_) => Body::from("wrong body"),
-    };
+        })
+        .map(|query_status| {
+            Response::new(Body::from(
+                serde_json::to_string(&query_status).expect("response serialization failed"),
+            ))
+        })
+        .unwrap_or_else(|err| {
+            // let's just blame the user
+            Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .body(Body::from(err))
+                .expect("Could not create response.")
+        });
 
-    Response::new(body)
+    response
 }
 
 pub async fn default_response() -> Response<Body> {
