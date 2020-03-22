@@ -1,6 +1,3 @@
-// TODO don't
-#![allow(dead_code)]
-
 use hyper::{Body, Request, Response, StatusCode};
 use serde::{Deserialize, Serialize};
 
@@ -118,7 +115,6 @@ pub async fn query_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>)
             ))
         })
         .unwrap_or_else(|err| {
-            // let's just blame the user
             Response::builder()
                 .status(StatusCode::BAD_REQUEST)
                 .body(Body::from(err))
