@@ -8,12 +8,10 @@ mod configuration;
 mod server;
 
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Method, Request, Response, Server, StatusCode};
-// use serde::{Serialize, Deserialize};
+use hyper::{Body, Method, Request, Server};
+
 use std::convert::Infallible;
 use std::sync::{Arc, RwLock};
-
-use api::ReqQuery;
 
 #[tokio::main]
 async fn main() {
@@ -32,45 +30,14 @@ async fn main() {
         async move {
             Ok::<_, Infallible>(service_fn(move |req: Request<Body>| {
                 let words = words.clone();
+
                 async move {
                     let resp = match (req.method(), req.uri().path()) {
-                        (&Method::GET, "/query") => {
-                            // it seems problematic to access our word set from an async
-                            // context, this is why we block here. :[
-                            let body = hyper::body::to_bytes(req.into_body()).await;
+                        (&Method::GET, "/query") => api::query_word(req, words).await,
 
-                            let resp = match body {
-                                Ok(body) => {
-                                    let query: Result<ReqQuery, _> = serde_json::from_slice(&body);
+                        (&Method::POST, "/add") => api::add_word(req, words).await,
 
-                                    if let Ok(query) = query {
-                                        let words = words.read().unwrap();
-
-                                        if words.contains(&query.word) {
-                                            Response::new(Body::from("contains"))
-                                        } else {
-                                            Response::new(Body::from("doesn't contain"))
-                                        }
-                                    } else {
-                                        Response::new(Body::from("wrong question"))
-                                    }
-                                }
-                                Err(_) => Response::new(Body::from("wrong body")),
-                            };
-
-                            resp
-                        }
-
-                        (&Method::POST, "/add") => {
-                            let mut words = words.write().unwrap();
-                            let _a1 = words.insert("aldsjfk".to_string());
-                            Response::new(Body::from("add"))
-                        }
-
-                        _ => Response::builder()
-                            .status(StatusCode::METHOD_NOT_ALLOWED)
-                            .body(Body::empty())
-                            .expect("Could not create response."),
+                        _ => api::default_response().await,
                     };
 
                     Ok::<_, Infallible>(resp)
