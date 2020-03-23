@@ -1,8 +1,8 @@
 use hyper::{Body, Request, Response, StatusCode};
 use serde::{Deserialize, Serialize};
 
-use std::collections::HashSet;
-use std::sync::{Arc, RwLock};
+use super::calculate_hash;
+use kudzu::raw::SkipList;
 
 // inserts
 #[derive(Serialize, Debug)]
@@ -45,7 +45,7 @@ pub struct ReqQuery {
 // TODO these functions below should be implementations of a trait
 
 // own everything (perhaps a better name would be `edward`)
-pub async fn add_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>) -> Response<Body> {
+pub async fn add_word(req: Request<Body>, words: &SkipList<u64>) -> Response<Body> {
     // mapping errors to &str is not elegant
     let response = hyper::body::to_bytes(req.into_body())
         .await
@@ -57,13 +57,12 @@ pub async fn add_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>) -
             let word = req.add.trim();
 
             if word_is_valid(word) {
-                // TODO only read lock for containment check?
-                let mut words = words.write().expect("lock was poisoned");
-
-                if words.contains(word) {
+                let hash = calculate_hash(word);
+                // contains
+                if words.get(&hash).is_some() {
                     RespInsertStatus::AlreadyExisted
                 } else {
-                    words.insert(word.to_string());
+                    words.insert(hash);
                     RespInsertStatus::Inserted
                 }
             } else {
@@ -87,7 +86,7 @@ pub async fn add_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>) -
 }
 
 // TODO a lot of duplication here
-pub async fn query_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>) -> Response<Body> {
+pub async fn query_word(req: Request<Body>, words: &SkipList<u64>) -> Response<Body> {
     let response = hyper::body::to_bytes(req.into_body())
         .await
         .map_err(|_| "couldn't read request body")
@@ -98,9 +97,9 @@ pub async fn query_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>)
             let word = req.word.trim();
 
             if word_is_valid(word) {
-                let words = words.read().expect("lock was poisoned");
+                let hash = calculate_hash(word);
 
-                if words.contains(word) {
+                if words.get(&hash).is_some() {
                     RespQueryStatus::Found
                 } else {
                     RespQueryStatus::NotFound
@@ -124,7 +123,7 @@ pub async fn query_word(req: Request<Body>, words: Arc<RwLock<HashSet<String>>>)
     response
 }
 
-pub async fn default_response() -> Response<Body> {
+pub fn default_response() -> Response<Body> {
     Response::builder()
         .status(StatusCode::METHOD_NOT_ALLOWED)
         .body(Body::empty())

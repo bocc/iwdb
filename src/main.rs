@@ -6,43 +6,45 @@ mod api;
 mod configuration;
 mod server;
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Server};
 
 use std::convert::Infallible;
-use std::sync::{Arc, RwLock};
+
+use kudzu::raw::SkipList;
+use lazy_static::lazy_static;
+
+lazy_static! {
+    // we are storing u64 hashes only, as the standard hasher works with those
+    static ref SKIPLIST: SkipList<u64> = {
+        let s = SkipList::new();
+        s
+    };
+}
 
 #[tokio::main]
 async fn main() {
     let config = configuration::parse_or_default("./iwdb.toml");
 
-    // create a set and fill a hashset with some values (before wrapping it in Arc)
-    let mut words = std::collections::HashSet::new();
+    init::insert_words(&SKIPLIST, &config).await;
 
-    init::insert_words(&mut words, &config).await;
+    // with a skiplist, returning a closure require no locking, cloning or
+    // ownership transfer
+    let make_service = make_service_fn(|_conn| async {
+        Ok::<_, Infallible>(service_fn(|req: Request<Body>| async {
+            let resp = match (req.method(), req.uri().path()) {
+                (&Method::GET, "/query") => api::query_word(req, &SKIPLIST).await,
 
-    let words = Arc::new(RwLock::new(words));
+                (&Method::POST, "/add") => api::add_word(req, &SKIPLIST).await,
 
-    let make_service = make_service_fn(move |_conn| {
-        let words = words.clone();
+                _ => api::default_response(),
+            };
 
-        async move {
-            Ok::<_, Infallible>(service_fn(move |req: Request<Body>| {
-                let words = words.clone();
-
-                async move {
-                    let resp = match (req.method(), req.uri().path()) {
-                        (&Method::GET, "/query") => api::query_word(req, words).await,
-
-                        (&Method::POST, "/add") => api::add_word(req, words).await,
-
-                        _ => api::default_response().await,
-                    };
-
-                    Ok::<_, Infallible>(resp)
-                }
-            }))
-        }
+            Ok::<_, Infallible>(resp)
+        }))
     });
 
     let addr = std::net::SocketAddr::new(config.server.ip, config.server.port);
@@ -56,4 +58,10 @@ async fn main() {
     if let Err(e) = server.await {
         eprintln!("Server error: {}", e);
     }
+}
+
+fn calculate_hash<T: Hash + ?Sized>(t: &T) -> u64 {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
 }

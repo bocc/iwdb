@@ -1,24 +1,16 @@
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
-pub(super) fn add_words<P>(words: &mut HashSet<String>, path: P) -> std::io::Result<usize>
+pub(super) fn add_words<P>(path: P) -> Result<Vec<String>, std::io::Error>
 where
     P: AsRef<Path>,
 {
-    let mut inserted: usize = 0;
-
     let input = File::open(path)?;
 
     let input = io::BufReader::new(input);
 
-    for line in input.lines() {
-        if let Ok(l) = line {
-            words.insert(l.trim().to_string());
-            inserted = inserted + 1;
-        }
-    }
+    let lines: Vec<_> = input.lines().filter_map(Result::ok).collect();
 
-    Ok(inserted)
+    Ok(lines)
 }

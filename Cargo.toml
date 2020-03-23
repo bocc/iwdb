@@ -15,3 +15,5 @@ serde_json = "1.0"
 http-serde = "1.0.1"
 bytes = { version = "0.5", features = ["serde"] }
 toml = "0.5.6"
+lazy_static = "1.4.0"
+kudzu = "0.1"
