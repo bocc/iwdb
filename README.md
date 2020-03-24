@@ -8,7 +8,7 @@ This service provides checks whether a word posted to it exists in a set of word
 
 # What is a word?
 
-A word is a valid utf-8 encoded string that is not empty, and doesn't contain internal white spaces (that would be a *sentence*) - we gracefully take care of starting and trailing white spaces for you, both at inserting & querying through the web API.
+A word is a valid utf-8 encoded string that is not empty, and doesn't contain internal white spaces (that would be a *sentence*) - we gracefully take care of leading and trailing white spaces for you, both at inserting & querying through the web API.
 
  
 
@@ -24,9 +24,9 @@ We have an `iwdb.toml` where you can edit a few basic things, like which random 
 
  
 
-# Branches (TODO)
+# Branches
 
-You can experiment with multiple backing set types. The MVP branch uses Rust's `HashSet` from the standard library as a kind of reference implementation, the kuzdu branch uses a lock-free skipmap that doesn't support removal by it's design, and the evmap branch uses an eventually consistent hashmap, where the tradeoff is eventual consistency and doubled memory usage.
+Currently, there are two branches. `master` uses Rust's `HashSet` from the standard library as a kind of reference implementation, with the necessary locking mechanisms. `skiplist` uses a lock-free skiplist ([kudzu](https://github.com/withoutboats/kudzu)), that can do insertion through a shared reference, but doesn't support removal by design. This implementation doesn't store inserted words, only their hashes (as `u64`s, calculated by Rust's default hasher) - this should be faster and require less memory. Also, a reference to the skiplist can be sent between threads without locking, which should result in better performance under high contention. The drawback of this approach that this datatype is not exactly *battle-tested*, and compiling it requires nightly Rust - so, this is mostly here due to theoretical interest.
 
  
 
@@ -48,8 +48,9 @@ There are some rudimentary test cases in the `assets` folder, which can be impor
 
 # Future developments
 
-There are of course still plenty of ways to do this better. Since being able to do iteration, draining, etc. on our word set is not a requirement, storing actual values is not necessary, only hashes are needed. This would have a two-fold benefit: smaller and known size, allowing for tricks like arena allocation. Docstrings and more tests are always nice.
+Further backing data structures could be evaluated, like [evmap](https://crates.io/crates/evmap). There are quite a lot of missed abstractions, ie. some problems could have been solved in a more idiomatic way via trait implementations for higher generality.
+
 
 # License
 
-The Unlicense. Leave me alone, *in the legal sense*.
+The Unlicense.
