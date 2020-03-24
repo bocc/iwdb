@@ -2,7 +2,7 @@
 
  
 
-This service provides checks whether a word posted to it exists in a set of words.
+This service checks whether a word posted to it exists in a set of words.
 
  
 
